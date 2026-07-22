@@ -10,7 +10,7 @@ const server = require('http').createServer(app);
 app.use(morgan('tiny'));
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, ApiKey");
     res.header("Access-Control-Expose-Headers", "total-count");
     next();
@@ -23,9 +23,12 @@ app.use('/', routes);
 
 
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
     if(process.env.NODE_ENV !== 'production') console.log(err);
-    res.status(err.status || 500);
+    // errors thrown locally use .status/.message; errors relayed back over the
+    // AMQP RPC from movie-service use .code/.error (see services/movie.js's
+    // sendMessage, which rejects with the raw {code, error} response body)
+    res.status(err.status || err.code || 500);
     res.json({'error': {
         message: err.message || err.error
     }});

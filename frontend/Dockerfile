@@ -1,42 +1,28 @@
-FROM node:8-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+COPY package*.json ./
 
-COPY src src/
-COPY build build/
-COPY config config/
-COPY index.html ./
-COPY .babelrc ./
+RUN npm ci
 
-ARG API_GATEWAY_URL
-ENV API_GATEWAY_URL=$API_GATEWAY_URL
-RUN echo "-> $API_GATEWAY_URL"
+COPY . .
+
+RUN npm run build
 
 
-ARG API_GATEWAY_PORT
-ENV API_GATEWAY_PORT=$API_GATEWAY_PORT
-RUN echo "-> $API_GATEWAY_PORT"
+FROM nginx:1.27-alpine
 
-RUN npm run build:all
+RUN addgroup -g 10001 -S appgroup && adduser -S -D -H -u 10001 -G appgroup appuser && \
+    chown -R appuser:appgroup /var/cache/nginx /run && \
+    touch /run/nginx.pid && chown appuser:appgroup /run/nginx.pid
 
+COPY --from=build --chown=appuser:appgroup /app/dist /usr/share/nginx/html
 
+COPY --chown=appuser:appgroup nginx.conf /etc/nginx/conf.d/default.conf
 
+COPY --chmod=755 docker-entrypoint.d/40-generate-frontend-config.sh /docker-entrypoint.d/40-generate-frontend-config.sh
 
+USER appuser
 
-FROM nginx:stable
-
-COPY --from=build /app/public/ /var/www
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-
-# Append "daemon off;" to the beginning of the configuration
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-
-# Expose ports
-EXPOSE 80
-
-# Set the default command to execute
-# when creating a new container
-CMD service nginx start
+EXPOSE 8083

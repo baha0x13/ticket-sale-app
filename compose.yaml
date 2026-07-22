@@ -1,0 +1,100 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "15672:15672"   # management UI: http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: KSR
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    image: ${IMAGE_PREFIX:-ticket-sale-app}-auth-service:${IMAGE_TAG:-latest}
+    build: ./auth-service
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: rootpass
+      DB_NAME: KSR
+      DB_PORT: "3306"
+      JWT_SECRET: dev-jwt-secret-change-me
+      ADMIN_EMAIL: admin@ticketflow.local
+      ADMIN_PASSWORD: admin123
+      ADMIN_NAME: Admin
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  api-service:
+    image: ${IMAGE_PREFIX:-ticket-sale-app}-api-service:${IMAGE_TAG:-latest}
+    build: ./api-service
+    ports:
+      - "3030:3030"
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq
+      MOVIES_QUEUE: movies
+      JWT_SECRET: dev-jwt-secret-change-me
+      AUTH_SERVICE_URL: http://auth-service:4000
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  movie-service:
+    image: ${IMAGE_PREFIX:-ticket-sale-app}-movie-service:${IMAGE_TAG:-latest}
+    build: ./movie-service
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq
+      MOVIES_QUEUE: movies
+      ORDERS_QUEUE: orders
+      NOTIFICATIONS_QUEUE: notifications
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: rootpass
+      DB_NAME: KSR
+      DB_PORT: "3306"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  notifications-service:
+    image: ${IMAGE_PREFIX:-ticket-sale-app}-notifications-service:${IMAGE_TAG:-latest}
+    build: ./notifications-service
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq
+      NOTIFICATIONS_QUEUE: notifications
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  frontend:
+    image: ${IMAGE_PREFIX:-ticket-sale-app}-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./frontend
+    environment:
+      API_GATEWAY_URL: http://localhost
+      API_GATEWAY_PORT: "3030"
+    ports:
+      - "8083:8083"
+    depends_on:
+      - api-service

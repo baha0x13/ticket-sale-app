@@ -1,17 +1,23 @@
 {
-  "name": "movie-service",
+  "name": "notifications-service",
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "lint": "eslint src"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "amqplib": "^0.5.2",
-    "express-handlebars": "3.0.0",
-    "nodemailer": "^4.6.7",
-    "nodemailer-express-handlebars": "3.0.0"
+    "amqplib": "^2.0.1",
+    "express-handlebars": "^8.0.1",
+    "nodemailer": "^9.0.3",
+    "nodemailer-express-handlebars": "^7.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0"
   }
 }

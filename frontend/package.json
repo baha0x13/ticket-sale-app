@@ -1,57 +1,30 @@
 {
-  "name": "vue-web-starter",
-  "version": "0.0.1",
+  "name": "ticketflow-frontend",
+  "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
+  "type": "module",
   "scripts": {
-    "clean": "node build/bin/clean.js",
-    "dev": "cross-env WEBPACK=dev node build/bin/server.js",
-    "dll": "npm run clean && webpack --progress --config build/webpack.dll.conf.js",
-    "build": "webpack --progress --config build/webpack.conf.js",
-    "build:all": "cross-env-shell WEBPACK=gh_pages \"npm run dll && npm run build\""
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.16.1",
-    "material-design-icons-iconfont": "^3.0.3",
-    "socket.io-client": "^2.2.0",
-    "vue": "^2.5.18",
-    "vue-axios": "^2.1.1",
-    "vue-router": "^2.3.0",
-    "vue-youtube-embed": "^2.2.1",
-    "vuetify": "^1.5.14"
+    "axios": "^1.13.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.6",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
-    "@babel/core": "7.2.0",
-    "@babel/plugin-transform-runtime": "7.2.0",
-    "@babel/preset-env": "7.2.0",
-    "@babel/runtime": "7.2.0",
-    "babel-loader": "8.0.4",
-    "cross-env": "^5.1.6",
-    "css-loader": "^0.28.4",
-    "express": "^4.15.3",
-    "extract-text-webpack-plugin": "^3.0.2",
-    "file-loader": "^1.1.6",
-    "friendly-errors-webpack-plugin": "^1.7.0",
-    "html-webpack-plugin": "^3.2.0",
-    "monfy": "^0.1.1",
-    "node-sass": "^4.5.3",
-    "resolve-url-loader": "^2.3.0",
-    "resource-hints-webpack-plugin": "0.0.2",
-    "rimraf": "^2.6.2",
-    "sass-loader": "^6.0.6",
-    "style-loader": "^0.18.2",
-    "url-loader": "^1.0.1",
-    "vue-loader": "^13.0.2",
-    "vue-style-loader": "^3.0.1",
-    "vue-template-compiler": "^2.5.19",
-    "webpack": "^3.0.0",
-    "webpack-dev-middleware": "^1.12.2",
-    "webpack-hot-middleware": "^2.18.2",
-    "webpack-module-hot-accept": "^1.0.5"
+    "@eslint/js": "^10.0.1",
+    "@vitejs/plugin-react": "^5.1.0",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "vite": "^7.3.0"
   }
 }

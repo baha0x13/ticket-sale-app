@@ -1,0 +1,190 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore: [ '**.md', 'docs/**' ]
+  pull_request:
+    branches: [ master ]
+    paths-ignore: [ '**.md', 'docs/**' ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  REPO_NAME: ticket-sale
+  REGISTRY: ghcr.io
+  IMAGE_NAME: baha0x13/ticket-sale
+
+jobs:
+
+  lint-and-audit:
+    strategy:
+      matrix:
+        service: [api-service, auth-service, movie-service, notifications-service, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm audit --audit-level=high
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: semgrep/semgrep-action@v1
+        with:
+          config: "p/default"
+
+  # Builds once, here, and nowhere else. trivy-scan and compose-integration-test
+  # both reuse these exact images (via artifact download + docker load) instead of
+  # rebuilding -- so what gets scanned and what gets integration-tested is
+  # byte-for-byte the same thing that (if everything passes) gets pushed.
+  build-images:
+    needs: [lint-and-audit, secret-scan, sast]
+    strategy:
+      matrix:
+        service: [api-service, auth-service, movie-service, notifications-service, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.service }} image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }} \
+            ./${{ matrix.service }}
+
+      - name: Save image to a tarball
+        run: docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }} -o /tmp/${{ matrix.service }}.tar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.service }}
+          path: /tmp/${{ matrix.service }}.tar
+          retention-days: 1
+
+  trivy-scan:
+    needs: build-images
+    strategy:
+      matrix:
+        service: [api-service, auth-service, movie-service, notifications-service, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.service }}
+          path: /tmp
+
+      - name: Load image
+        run: docker load -i /tmp/${{ matrix.service }}.tar
+
+      - name: Scan ${{ matrix.service }} image with Trivy
+        uses: aquasecurity/trivy-action@v0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+  compose-integration-test:
+    needs: build-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: /tmp/images
+
+      - name: Load all images
+        run: |
+          for f in /tmp/images/*/*.tar; do
+            docker load -i "$f"
+          done
+
+      - name: Start the stack (using the images built in build-images, not rebuilt)
+        env:
+          IMAGE_PREFIX: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: docker compose up -d --wait
+
+      - name: Seed the admin account
+        run: docker compose exec -T auth-service node src/init
+
+      - name: Seed sample movies
+        run: docker compose exec -T movie-service node src/init
+
+      - name: Smoke test the api-service
+        run: ./scripts/smoke-test.sh
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  push-images:
+    needs: [trivy-scan, compose-integration-test]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    strategy:
+      matrix:
+        service: [api-service, auth-service, movie-service, notifications-service, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.service }}
+          path: /tmp
+
+      - name: Load image
+        run: docker load -i /tmp/${{ matrix.service }}.tar
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push ${{ matrix.service }} image to ghcr.io
+        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}

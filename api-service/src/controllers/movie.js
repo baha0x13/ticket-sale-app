@@ -16,5 +16,17 @@ module.exports = {
 
     getTrailer(title, year){
         return movieService.getTrailer(title, year)
+    },
+
+    delete(id){
+        return movieService.deleteMovie(id);
+    },
+
+    getAllDeleted(){
+        return movieService.getAllDeletedMovies();
+    },
+
+    restore(id){
+        return movieService.restoreMovie(id);
     }
 };

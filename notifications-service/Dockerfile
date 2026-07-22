@@ -1,12 +1,15 @@
-FROM node:8-alpine
+FROM node:22-alpine
 
-EXPOSE 8082
+RUN addgroup -g 10001 -S appgroup && adduser -S -D -H -u 10001 -G appgroup appuser
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+COPY --chown=appuser:appgroup package*.json ./
 
-COPY src src/
+RUN npm ci --omit=dev
 
-CMD ["sh", "-c", "npm start" ]
+COPY --chown=appuser:appgroup src ./src
+
+USER appuser
+
+CMD ["node", "src/index.js"]

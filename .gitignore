@@ -1,1 +1,13 @@
 .idea/
+old_config/
+.claude/
+.env
+.git/
+architecture.md
+docs/
+DOCKERFILE_PLAN.md
+LICENSE
+README.md
+.vscode
+ARCHITECTURE.md
+

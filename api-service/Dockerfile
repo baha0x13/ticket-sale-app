@@ -1,13 +1,19 @@
-FROM node:8-alpine
+FROM node:22-alpine
+
+RUN addgroup -g 10001 -S appgroup && adduser -S -D -H -u 10001 -G appgroup appuser
+
+WORKDIR /app
+
+COPY --chown=appuser:appgroup package*.json ./
+
+RUN npm ci --omit=dev
+
+COPY --chown=appuser:appgroup src ./src
+
+USER appuser
 
 EXPOSE 3030
 
-WORKDIR /usr/src/app
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s CMD wget -qO- http://localhost:3030/healthz || exit 1
 
-COPY package.json ./
-RUN npm install
-
-COPY src src/
-
-CMD ["sh", "-c", "npm start" ]
-
+CMD ["node", "src/index.js"]

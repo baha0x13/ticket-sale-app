@@ -1,15 +1,54 @@
 const Op = require('sequelize').Op;
+const crypto = require('crypto');
 const {Order, db, Seats, Movie} = require('../models');
+const notificationService = require('../services/notification');
 
+const TICKET_PRICE = 15.00;
+
+function generateBankReference() {
+    return 'TXN-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+function sendTicketEmail(order){
+    const quantity = order.seats.length;
+
+    return notificationService.send({
+        from: '"Cinema City👻" <system@cinema-city.com>',
+        to: order.userEmail,
+        subject: 'Your ticket',
+        template: 'billing',
+        context: {
+            "name": order.userName,
+            "movie": order.movie.title,
+            "date": new Date(order.movie.date).toLocaleDateString(),
+            "time": new Date(order.movie.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            "hall": order.movie.hall,
+            "seat": order.seats.map(el => el.row + el.column),
+            "quantity": quantity,
+            "price": TICKET_PRICE,
+            "subtotal": TICKET_PRICE * quantity,
+            "total": TICKET_PRICE * quantity,
+            "currency": "USD",
+            "url": "http://localhost:8080/orders"
+        }
+    }).catch(err => console.log('Failed to send ticket email', err));
+}
 
 module.exports = {
 
-    async create({movieId, seatIds}){
+    async create({movieId, seatIds, userId, userEmail, userName}){
         let transaction;
 
         try {
             transaction = await db.transaction();
-            const order = await Order.create({movieId}, {transaction});
+            const order = await Order.create({
+                movieId,
+                userId,
+                userEmail,
+                userName,
+                paymentStatus: 'pending',
+                bankReference: generateBankReference()
+            }, {transaction});
 
 
 
@@ -43,7 +82,7 @@ module.exports = {
             },
             include: [
                 {
-                    attributes: ['row', 'column'],
+                    attributes: ['id', 'row', 'column'],
                     model: Seats,
                     through:{
                         attributes: []
@@ -60,7 +99,7 @@ module.exports = {
         return Order.findAll({
             include: [
                 {
-                    attributes: ['row', 'column'],
+                    attributes: ['id', 'row', 'column'],
                     model: Seats,
                     through:{
                         attributes: []
@@ -72,7 +111,49 @@ module.exports = {
             ],
             order: [['createdAt', 'DESC']]
         })
+    },
+
+    getAllForUser(userId){
+        return Order.findAll({
+            where: {
+                userId: {[Op.eq]: userId}
+            },
+            include: [
+                {
+                    attributes: ['id', 'row', 'column'],
+                    model: Seats,
+                    through:{
+                        attributes: []
+                    }
+                },
+                {
+                    model: Movie
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        })
+    },
+
+    async approve(id){
+        const order = await this.getById(id);
+        if(order === null) throw new Error('Order not found');
+
+        await order.update({paymentStatus: 'confirmed'});
+        const fullOrder = await this.getById(id);
+        await sendTicketEmail(fullOrder);
+        return fullOrder;
+    },
+
+    async reject(id){
+        const order = await this.getById(id);
+        if(order === null) throw new Error('Order not found');
+
+        for(const seat of order.seats){
+            await seat.update({isAvailable: true});
+        }
+
+        await order.update({paymentStatus: 'rejected'});
+        return this.getById(id);
     }
 };
-
 

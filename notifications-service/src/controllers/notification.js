@@ -1,12 +1,12 @@
 const nodemailer = require('nodemailer');
-const nodemailerExpressHandlebars = require('nodemailer-express-handlebars');
+const nodemailerExpressHandlebars = require('nodemailer-express-handlebars').default;
 const handlebars = require('express-handlebars');
 const path = require('path');
 
 
 
 function setUpViewEngine(transporter){
-    const viewEngine = handlebars.create({});
+    const viewEngine = handlebars.create({defaultLayout: false});
     const compiler = nodemailerExpressHandlebars({
         viewEngine: viewEngine,
         viewPath: path.join(__dirname, '../views'),

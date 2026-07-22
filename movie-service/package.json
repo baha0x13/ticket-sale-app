@@ -4,16 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "lint": "eslint src"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "amqplib": "^0.5.2",
-    "mysql2": "^1.6.1",
-    "node-uuid": "^1.4.8",
-    "sequelize": "^4.38.1",
-    "got": "latest",
-    "movie-trailer": "latest"
+    "amqplib": "^2.0.1",
+    "got": "^11.8.6",
+    "movie-trailer": "^3.2.3",
+    "mysql2": "^3.23.1",
+    "sequelize": "^6.37.8"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0"
   }
 }

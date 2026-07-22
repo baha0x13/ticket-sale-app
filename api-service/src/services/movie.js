@@ -1,6 +1,6 @@
 const config = require('../config');
 const amqp = require('amqplib');
-const uuid = require('node-uuid');
+const { randomUUID } = require('crypto');
 
 
 let globalChannel = null;
@@ -24,7 +24,7 @@ async function createChannel(q) {
 
 function sendMessage(data){
     return new Promise((resolve, reject) => {
-        const corrId = uuid();
+        const corrId = randomUUID();
 
         promises.set(corrId, msg => {
             const data = JSON.parse(msg.content.toString());
@@ -36,7 +36,7 @@ function sendMessage(data){
             }
         });
 
-        globalChannel.sendToQueue(config.services.movies_q, new Buffer(JSON.stringify(data)), {
+        globalChannel.sendToQueue(config.services.movies_q, Buffer.from(JSON.stringify(data)), {
             correlationId: corrId, replyTo: replyQueue
         });
     })
@@ -75,11 +75,35 @@ module.exports = {
         return sendMessage({action: 'movie.getTrailer', body: {title: title, year: year}})
     },
 
+    deleteMovie(id){
+        return sendMessage({action: 'movie.delete', body: id})
+    },
+
+    getAllDeletedMovies(){
+        return sendMessage({action: 'movie.getAllDeleted'})
+    },
+
+    restoreMovie(id){
+        return sendMessage({action: 'movie.restore', body: id})
+    },
+
     createOrder(data){
         return sendMessage({action: 'order.create', body: data})
     },
 
     getAllOrders(){
         return sendMessage({action: 'order.getAll'})
+    },
+
+    getAllOrdersForUser(userId){
+        return sendMessage({action: 'order.getAllForUser', body: userId})
+    },
+
+    approveOrder(id){
+        return sendMessage({action: 'order.approve', body: id})
+    },
+
+    rejectOrder(id){
+        return sendMessage({action: 'order.reject', body: id})
     }
 };

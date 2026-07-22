@@ -50,15 +50,34 @@ async function processMessage(channel, msg) {
             case 'movie.getTrailer':
                 actionResult = await movieController.getTrailer(data.body);
                 break;
+            case 'movie.delete':
+                await movieController.delete(parseInt(data.body));
+                actionResult = { deleted: true };
+                break;
+            case 'movie.getAllDeleted':
+                actionResult = await movieController.getAllDeleted();
+                break;
+            case 'movie.restore':
+                await movieController.restore(parseInt(data.body));
+                actionResult = { restored: true };
+                break;
             case 'order.create':
                 actionResult = await orderController.create(data.body);
                 break;
             case 'order.getAll':
                 actionResult = await orderController.getAll();
                 break;
+            case 'order.getAllForUser':
+                actionResult = await orderController.getAllForUser(data.body);
+                break;
+            case 'order.approve':
+                actionResult = await orderController.approve(data.body);
+                break;
+            case 'order.reject':
+                actionResult = await orderController.reject(data.body);
+                break;
             default:
                 throw new Error('Invalid action name');
-                break;
         }
 
 
@@ -92,8 +111,9 @@ async function processMessage(channel, msg) {
 //     channel.consume(config.orders_q, msg => createOrder(channel, msg));
 // }).catch(console.log);
 
-// sync() will create all table if they doesn't exist in database
-models.db.sync().then(()=>{
+// sync({alter: true}) creates tables if missing and alters existing ones to match
+// the models (dev convenience, not a real migration strategy)
+models.db.sync({alter: true}).then(()=>{
     createChannel(config.movies_q).then(channel => {
         console.log('> movie service listening for messages');
         channel.consume(config.movies_q, msg => processMessage(channel, msg));

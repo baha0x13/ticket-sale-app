@@ -1,5 +1,5 @@
 module.exports = {
-    amqp_url: process.env.AMQP_URL || 'amqp://guest:guest@localhost',
+    amqp_url: process.env.AMQP_URL || 'amqp://guest:guest@rabbitmq',
 
     movies_q: process.env.MOVIES_QUEUE || 'movies',
     orders_q: process.env.ORDERS_QUEUE || 'orders',

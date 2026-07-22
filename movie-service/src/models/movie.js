@@ -11,5 +11,6 @@ module.exports = function (db) {
         imdbID: {type: Sequelize.STRING, unique: true, allowNull: false},
         hall: {type: Sequelize.TINYINT, allowNull: false},
         date: {type: Sequelize.DATE, allowNull: false},
+        isDeleted: {type: Sequelize.BOOLEAN, defaultValue: false},
     });
 };
