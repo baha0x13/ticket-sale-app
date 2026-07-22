@@ -111,7 +111,7 @@ jobs:
         run: docker load -i /tmp/${{ matrix.service }}.tar
 
       - name: Scan ${{ matrix.service }} image with Trivy
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}
           severity: CRITICAL,HIGH
