@@ -7,7 +7,9 @@ WORKDIR /app
 
 COPY --chown=appuser:appgroup package*.json ./
 
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 
 COPY --chown=appuser:appgroup src ./src
 
