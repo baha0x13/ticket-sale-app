@@ -65,10 +65,6 @@ jobs:
         with:
           config: "p/default"
 
-  # Builds once, here, and nowhere else. trivy-scan and compose-integration-test
-  # both reuse these exact images (via artifact download + docker load) instead of
-  # rebuilding -- so what gets scanned and what gets integration-tested is
-  # byte-for-byte the same thing that (if everything passes) gets pushed.
   build-images:
     needs: [lint-and-audit, secret-scan, sast]
     strategy:
@@ -110,7 +106,7 @@ jobs:
       - name: Load image
         run: docker load -i /tmp/${{ matrix.service }}.tar
 
-      - name: Scan ${{ matrix.service }} image with Trivy
+      - name: Scan ${{ matrix.service }} image with Trivy !!
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}
