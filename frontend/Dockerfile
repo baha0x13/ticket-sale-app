@@ -13,7 +13,8 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
-RUN addgroup -g 10001 -S appgroup && adduser -S -D -H -u 10001 -G appgroup appuser && \
+RUN apk update && apk upgrade --no-cache && \
+    addgroup -g 10001 -S appgroup && adduser -S -D -H -u 10001 -G appgroup appuser && \
     chown -R appuser:appgroup /var/cache/nginx /run && \
     touch /run/nginx.pid && chown appuser:appgroup /run/nginx.pid
 
