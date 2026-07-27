@@ -1,30 +1,47 @@
-# movie-tickets
-An application for booking tickets at the cinema. Implemented in the microservices architecture, using Docker and docker-compose.
+# TicketFlow
 
+An event-ticket-sale platform (originally a cinema booking app) built as a
+microservices architecture — five services (`auth-service`, `api-service`,
+`movie-service`, `notifications-service`, `frontend`) behind RabbitMQ and MySQL. See
+[`ARCHITECTURE.md`](ARCHITECTURE.md) for how requests actually flow through the
+system, and [`architecture.md`](architecture.md) for the DevOps/Kubernetes design.
+
+## CI/CD status
+
+- **CI** ([`.github/workflows/ci-pipeline.yaml`](.github/workflows/ci-pipeline.yaml)):
+  lint + `npm audit` per service, Gitleaks secret scan, Semgrep SAST, image build,
+  Trivy image scan (CRITICAL/HIGH gate), `docker compose` integration test, then push
+  to `ghcr.io/baha0x13/ticket-sale-<service>` on `master`. All green.
+- **CD**: not yet wired up. Next step is ArgoCD + a local Minikube cluster, watching a
+  separate `ticket-sale-config` GitOps repo — see [`CD_PLAN.md`](CD_PLAN.md).
 
 ## Architecture
 
 ![](docs/architecture.jpeg)
 
 
-## How to run
+## How to run locally
 
-__Before you start__ 
+__Before you start__
 
 * Install Docker and Docker Compose
-* Set up the connection to database in movie-service/src/config/db.js
-* Set AMQP_URL variable in .env file 
-(you can use a free 'Little Lemur' plan from [CloudAMQP](https://www.cloudamqp.com/))
+* Copy `.env` and set `AMQP_URL` (a free 'Little Lemur' plan from
+  [CloudAMQP](https://www.cloudamqp.com/) works, or point at the `rabbitmq` service
+  already defined in `compose.yaml`)
 
 ```
-#start services
-docker-compose up -d
+# start services (builds images locally, matching the CI build args)
+docker compose up -d --build
 
-#fill db with sample data 
-docker exec -it <MOVIE_SERVICE_CONTAINER_NAME> node src/init
+# seed an admin account
+docker compose exec -T auth-service node src/init
+
+# seed sample movies
+docker compose exec -T movie-service node src/init
 ```
 
-After starting services web app is available on `http://localhost:80`
+After starting services the web app is available on `http://localhost:8083`, and the
+API directly on `http://localhost:3030`.
 
 
 ## Features
@@ -66,11 +83,14 @@ After starting services web app is available on `http://localhost:80`
 ## Commands
 
 ```
-#rebuild containers
-docker-compose build
+# rebuild containers
+docker compose build
 
-#list all containers
-docker-compose ps -all
+# list all containers
+docker compose ps -a
+
+# run the same smoke test CI runs
+./scripts/smoke-test.sh
 ```
 
 ## Useful links

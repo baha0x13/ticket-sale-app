@@ -1,4 +1,5 @@
 const amqp = require('amqplib');
+const http = require('http');
 const config = require('./config');
 
 const movieController = require('./controllers/movie');
@@ -7,6 +8,8 @@ const models = require('./models');
 
 console.log('> movie service starting...');
 
+let amqpConnected = false;
+
 /**
  *
  * @param {string} q
@@ -14,10 +17,23 @@ console.log('> movie service starting...');
  */
 async function createChannel(q) {
     const connection = await amqp.connect(config.amqp_url);
+
+    connection.on('error', (err) => {
+        console.error('AMQP connection error', err);
+        amqpConnected = false;
+        process.exit(1);
+    });
+    connection.on('close', () => {
+        console.error('AMQP connection closed');
+        amqpConnected = false;
+        process.exit(1);
+    });
+
     const channel = await connection.createChannel();
     await channel.assertQueue(q);
     //NOTE: set maximum allowed number of unacknowledged messages
     channel.prefetch(1);
+    amqpConnected = true;
     return channel;
 }
 
@@ -117,5 +133,21 @@ models.db.sync({alter: true}).then(()=>{
     createChannel(config.movies_q).then(channel => {
         console.log('> movie service listening for messages');
         channel.consume(config.movies_q, msg => processMessage(channel, msg));
-    }).catch(console.log);
+    }).catch(err => {
+        console.error('Failed to set up AMQP channel', err);
+        process.exit(1);
+    });
 });
+
+http.createServer((req, res) => {
+    if (req.url === '/healthz') {
+        res.writeHead(200);
+        return res.end('ok');
+    }
+    if (req.url === '/readyz') {
+        res.writeHead(amqpConnected ? 200 : 503);
+        return res.end(amqpConnected ? 'ready' : 'not ready');
+    }
+    res.writeHead(404);
+    res.end();
+}).listen(3001, () => console.log('> actuator listening on :3001'));

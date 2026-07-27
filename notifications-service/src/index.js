@@ -1,9 +1,12 @@
 const amqp = require('amqplib');
+const http = require('http');
 const config = require('./config');
 const notificationController = require('./controllers/notification');
 
 
 console.log('> notification service starting...');
+
+let amqpConnected = false;
 
 /**
  *
@@ -12,8 +15,21 @@ console.log('> notification service starting...');
  */
 async function createChannel(q) {
     const connection = await amqp.connect(config.amqp_url);
+
+    connection.on('error', (err) => {
+        console.error('AMQP connection error', err);
+        amqpConnected = false;
+        process.exit(1);
+    });
+    connection.on('close', () => {
+        console.error('AMQP connection closed');
+        amqpConnected = false;
+        process.exit(1);
+    });
+
     const channel = await connection.createChannel();
     await channel.assertQueue(q);
+    amqpConnected = true;
     return channel;
 }
 
@@ -43,4 +59,20 @@ async function consume(channel, msg) {
 createChannel(config.q).then(channel => {
     console.log('> notification service listening for messages');
     channel.consume(config.q, msg => consume(channel, msg));
-}).catch(console.log);
+}).catch(err => {
+    console.error('Failed to set up AMQP channel', err);
+    process.exit(1);
+});
+
+http.createServer((req, res) => {
+    if (req.url === '/healthz') {
+        res.writeHead(200);
+        return res.end('ok');
+    }
+    if (req.url === '/readyz') {
+        res.writeHead(amqpConnected ? 200 : 503);
+        return res.end(amqpConnected ? 'ready' : 'not ready');
+    }
+    res.writeHead(404);
+    res.end();
+}).listen(3001, () => console.log('> actuator listening on :3001'));

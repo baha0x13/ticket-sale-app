@@ -15,4 +15,6 @@ COPY --chown=appuser:appgroup src ./src
 
 USER appuser
 
+EXPOSE 3001
+
 CMD ["node", "src/index.js"]
