@@ -13,7 +13,7 @@ function sendTicketEmail(order){
     const quantity = order.seats.length;
 
     return notificationService.send({
-        from: '"Cinema City👻" <system@cinema-city.com>',
+        from: 'Ticket-Sale👻',
         to: order.userEmail,
         subject: 'Your ticket',
         template: 'billing',
@@ -28,8 +28,7 @@ function sendTicketEmail(order){
             "price": TICKET_PRICE,
             "subtotal": TICKET_PRICE * quantity,
             "total": TICKET_PRICE * quantity,
-            "currency": "USD",
-            "url": "http://localhost:8080/orders"
+            "currency": "TND"
         }
     }).catch(err => console.log('Failed to send ticket email', err));
 }

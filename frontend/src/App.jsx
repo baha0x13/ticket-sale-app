@@ -27,7 +27,7 @@ export default function App() {
   return (
     <div>
       <nav className="nav">
-        <span className="nav__title">Cinema City 🎬</span>
+        <span className="nav__title">Ticket-Sale 🎬</span>
         <NavLink to="/movies" className={navLinkClass}>Movies</NavLink>
 
         {user && <NavLink to="/orders" className={navLinkClass}>Orders</NavLink>}

@@ -82,6 +82,11 @@ services:
     environment:
       AMQP_URL: amqp://guest:guest@rabbitmq
       NOTIFICATIONS_QUEUE: notifications
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:?SMTP_USER must be set in .env}
+      SMTP_PASS: ${SMTP_PASS:?SMTP_PASS must be set in .env}
     depends_on:
       rabbitmq:
         condition: service_healthy
