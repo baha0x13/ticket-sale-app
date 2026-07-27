@@ -117,6 +117,15 @@ jobs:
     needs: build-images
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # compose.yaml requires SMTP_USER/SMTP_PASS to be set (:? guard) -- every step
+      # below that touches docker compose (up, exec, logs, down) re-interpolates the
+      # file independently, so this needs to be job-level, not just on the "up" step.
+      # smoke-test.sh never triggers an order/approval flow, so notifications-service
+      # never actually calls transporter.sendMail() here -- these only need to be
+      # present, not valid real credentials.
+      SMTP_USER: ci-placeholder@example.com
+      SMTP_PASS: ci-placeholder
     steps:
       - uses: actions/checkout@v7
 
@@ -136,11 +145,6 @@ jobs:
         env:
           IMAGE_PREFIX: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           IMAGE_TAG: ${{ github.sha }}
-          # smoke-test.sh never triggers an order/approval flow, so notifications-service
-          # never actually calls transporter.sendMail() here -- these only need to be
-          # present (compose.yaml requires them), not valid real credentials.
-          SMTP_USER: ci-placeholder@example.com
-          SMTP_PASS: ci-placeholder
         run: docker compose up -d --wait
 
       - name: Seed the admin account
