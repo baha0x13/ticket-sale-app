@@ -1,4 +1,4 @@
-import { NavLink, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { NavLink, Routes, Route, Navigate, useNavigate } from 'react-router';
 
 import Movies from './pages/Movies.jsx';
 import Movie from './pages/Movie.jsx';

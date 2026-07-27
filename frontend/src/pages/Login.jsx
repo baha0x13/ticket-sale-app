@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router';
 import { useAuth } from '../auth/useAuth.js';
 
 export default function Login() {

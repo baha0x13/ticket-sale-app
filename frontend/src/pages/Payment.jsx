@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router';
 import api from '../api';
 
 const SIMULATED_BANK_ACCOUNT = 'TF-0192 8374 6501 2298';

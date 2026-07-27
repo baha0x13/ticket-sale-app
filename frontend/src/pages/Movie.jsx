@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router';
 import api from '../api';
 import socket from '../socket';
 import { getIdFromURL } from '../utils/youtube';

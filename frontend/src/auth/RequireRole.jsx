@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { useAuth } from './useAuth.js';
 
 export default function RequireRole({ roles, children }) {
