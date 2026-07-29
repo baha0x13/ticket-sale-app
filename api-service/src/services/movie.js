@@ -14,6 +14,16 @@ const promises = new Map(); // correlationId => Function - callback
  */
 async function createChannel(q) {
     const connection = await amqp.connect(config.amqp_url);
+
+    connection.on('error', (err) => {
+        console.error('AMQP connection error', err);
+        process.exit(1);
+    });
+    connection.on('close', () => {
+        console.error('AMQP connection closed');
+        process.exit(1);
+    });
+
     const channel = await connection.createChannel();
     await channel.assertQueue(q);
     const {queue: tmp} = await channel.assertQueue('', {exclusive: true});
@@ -51,6 +61,9 @@ createChannel(config.services.movies_q).then(channel => {
         promise(msg);
         promises.delete(corrId);
     }, {noAck: true})
+}).catch(err => {
+    console.error('Failed to set up AMQP channel', err);
+    process.exit(1);
 });
 
 module.exports = {
