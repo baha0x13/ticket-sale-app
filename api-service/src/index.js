@@ -2,6 +2,7 @@ const morgan  = require('morgan');
 const express = require('express');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
+const config = require('./config');
 
 
 let app = express();
@@ -9,7 +10,7 @@ const server = require('http').createServer(app);
 
 app.use(morgan('tiny'));
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Origin", config.frontend_origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, ApiKey");
     res.header("Access-Control-Expose-Headers", "total-count");
@@ -54,7 +55,11 @@ function clearClientReservation(socket) {
     delete clientIdToReservation[socket.id];
 }
 
-const io = require('socket.io')(server);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: config.frontend_origin
+    }
+});
 io.on('connection', socket => {
     console.log('new client: ', socket.id);
 
