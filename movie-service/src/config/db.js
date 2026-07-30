@@ -1,9 +1,15 @@
 module.exports = {
-    username: process.env.DB_USERNAME || 'root',
-    password: process.env.DB_PASSWORD || 'root',
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
     host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'KSR',
-    dialect: 'mysql',
-    port: process.env.DB_PORT || '3306',
-    logging: false
+    database: process.env.DB_NAME || 'postgres',
+    dialect: 'postgres',
+    port: process.env.DB_PORT || '5432',
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
 };

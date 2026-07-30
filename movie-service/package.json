@@ -13,7 +13,7 @@
     "amqplib": "^2.0.1",
     "got": "^11.8.6",
     "movie-trailer": "^3.2.3",
-    "mysql2": "^3.23.1",
+    "pg": "^8.13.1",
     "sequelize": "^6.37.8"
   },
   "overrides": {
