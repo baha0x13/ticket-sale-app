@@ -1,3 +1,5 @@
+const useSsl = process.env.DB_SSL === 'true';
+
 module.exports = {
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
@@ -6,10 +8,10 @@ module.exports = {
     dialect: 'postgres',
     port: process.env.DB_PORT || '5432',
     logging: false,
-    dialectOptions: {
+    dialectOptions: useSsl ? {
         ssl: {
             require: true,
             rejectUnauthorized: false
         }
-    }
+    } : {}
 };

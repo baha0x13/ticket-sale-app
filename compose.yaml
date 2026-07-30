@@ -10,15 +10,14 @@ services:
       timeout: 5s
       retries: 10
 
-  mysql:
-    image: mysql:8.0
+  postgres:
+    image: postgres:16-alpine
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: KSR
+      POSTGRES_PASSWORD: devpass
     ports:
-      - "3307:3306"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -27,17 +26,18 @@ services:
     image: ${IMAGE_PREFIX:-ticket-sale-app}-auth-service:${IMAGE_TAG:-latest}
     build: ./auth-service
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: root
-      DB_PASSWORD: rootpass
-      DB_NAME: KSR
-      DB_PORT: "3306"
+      DB_HOST: postgres
+      DB_USERNAME: postgres
+      DB_PASSWORD: devpass
+      DB_NAME: postgres
+      DB_PORT: "5432"
+      DB_SSL: "false"
       JWT_SECRET: dev-jwt-secret-change-me
       ADMIN_EMAIL: admin@ticketflow.local
       ADMIN_PASSWORD: admin123
       ADMIN_NAME: Admin
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     restart: on-failure
 
@@ -64,15 +64,16 @@ services:
       MOVIES_QUEUE: movies
       ORDERS_QUEUE: orders
       NOTIFICATIONS_QUEUE: notifications
-      DB_HOST: mysql
-      DB_USERNAME: root
-      DB_PASSWORD: rootpass
-      DB_NAME: KSR
-      DB_PORT: "3306"
+      DB_HOST: postgres
+      DB_USERNAME: postgres
+      DB_PASSWORD: devpass
+      DB_NAME: postgres
+      DB_PORT: "5432"
+      DB_SSL: "false"
     depends_on:
       rabbitmq:
         condition: service_healthy
-      mysql:
+      postgres:
         condition: service_healthy
     restart: on-failure
 
