@@ -13,11 +13,6 @@ app.use(morgan('tiny'));
 app.use(requestDurationMiddleware);
 app.use(bodyParser.json());
 
-app.get('/metrics', async (req, res) => {
-    res.set('Content-Type', register.contentType);
-    res.end(await register.metrics());
-});
-
 app.use('/', routes);
 
 app.use((err, req, res, _next) => {
@@ -30,4 +25,16 @@ models.db.sync({ alter: true }).then(() => {
     app.listen(config.port, () => {
         console.log(`> auth-service listening on port ${config.port}`);
     });
+});
+
+require('http').createServer(async (req, res) => {
+    if (req.url === '/metrics') {
+        res.setHeader('Content-Type', register.contentType);
+        res.end(await register.metrics());
+        return;
+    }
+    res.writeHead(404);
+    res.end();
+}).listen(process.env.METRICS_PORT || 9464, () => {
+    console.log('> Metrics server listening on port', process.env.METRICS_PORT || 9464);
 });

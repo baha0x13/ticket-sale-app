@@ -19,11 +19,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/metrics', async (req, res) => {
-    res.set('Content-Type', register.contentType);
-    res.end(await register.metrics());
-});
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use('/', routes);
@@ -44,6 +39,18 @@ app.use((err, req, res, _next) => {
 
 server.listen(3030, () => {
     console.log('> Express app listening on port 3030');
+});
+
+require('http').createServer(async (req, res) => {
+    if (req.url === '/metrics') {
+        res.setHeader('Content-Type', register.contentType);
+        res.end(await register.metrics());
+        return;
+    }
+    res.writeHead(404);
+    res.end();
+}).listen(process.env.METRICS_PORT || 9464, () => {
+    console.log('> Metrics server listening on port', process.env.METRICS_PORT || 9464);
 });
 
 
