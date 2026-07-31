@@ -5,6 +5,7 @@ const config = require('./config');
 const movieController = require('./controllers/movie');
 const orderController = require('./controllers/order');
 const models = require('./models');
+const { register, messagesProcessed } = require('./metrics');
 
 console.log('> movie service starting...');
 
@@ -104,6 +105,7 @@ async function processMessage(channel, msg) {
 
         channel.ack(msg);
         channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify(response)), {correlationId: msg.properties.correlationId});
+        messagesProcessed.inc({ action: data.action, status: 'success' });
 
     }catch (e) {
         console.log('Error in movie-service', e);
@@ -114,6 +116,7 @@ async function processMessage(channel, msg) {
         if(process.env.NODE_ENV !== 'production') response.stack = e.stack;
         channel.ack(msg);
         channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify(response)), {correlationId: msg.properties.correlationId});
+        messagesProcessed.inc({ action: 'unknown', status: 'error' });
     }
 }
 
@@ -139,7 +142,7 @@ models.db.sync({alter: true}).then(()=>{
     });
 });
 
-http.createServer((req, res) => {
+http.createServer(async (req, res) => {
     if (req.url === '/healthz') {
         res.writeHead(200);
         return res.end('ok');
@@ -147,6 +150,10 @@ http.createServer((req, res) => {
     if (req.url === '/readyz') {
         res.writeHead(amqpConnected ? 200 : 503);
         return res.end(amqpConnected ? 'ready' : 'not ready');
+    }
+    if (req.url === '/metrics') {
+        res.writeHead(200, { 'Content-Type': register.contentType });
+        return res.end(await register.metrics());
     }
     res.writeHead(404);
     res.end();

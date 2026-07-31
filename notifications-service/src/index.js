@@ -2,6 +2,7 @@ const amqp = require('amqplib');
 const http = require('http');
 const config = require('./config');
 const notificationController = require('./controllers/notification');
+const { register, emailsSent } = require('./metrics');
 
 
 console.log('> notification service starting...');
@@ -49,8 +50,10 @@ async function consume(channel, msg) {
         await notificationController.send(mail);
         console.log(`> Email has been successfully send to ${mail.to}`);
         channel.ack(msg);
+        emailsSent.inc({ status: 'success' });
     }catch (e) {
         console.log(e);
+        emailsSent.inc({ status: 'error' });
     }
 }
 
@@ -64,7 +67,7 @@ createChannel(config.q).then(channel => {
     process.exit(1);
 });
 
-http.createServer((req, res) => {
+http.createServer(async (req, res) => {
     if (req.url === '/healthz') {
         res.writeHead(200);
         return res.end('ok');
@@ -72,6 +75,10 @@ http.createServer((req, res) => {
     if (req.url === '/readyz') {
         res.writeHead(amqpConnected ? 200 : 503);
         return res.end(amqpConnected ? 'ready' : 'not ready');
+    }
+    if (req.url === '/metrics') {
+        res.writeHead(200, { 'Content-Type': register.contentType });
+        return res.end(await register.metrics());
     }
     res.writeHead(404);
     res.end();

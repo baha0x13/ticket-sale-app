@@ -3,12 +3,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
 const config = require('./config');
+const { register, requestDurationMiddleware } = require('./metrics');
 
 
 let app = express();
 const server = require('http').createServer(app);
 
 app.use(morgan('tiny'));
+app.use(requestDurationMiddleware);
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", config.frontend_origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -17,6 +19,10 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+});
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));

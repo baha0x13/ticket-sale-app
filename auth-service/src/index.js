@@ -5,11 +5,19 @@ const bodyParser = require('body-parser');
 const config = require('./config');
 const models = require('./models');
 const routes = require('./routes');
+const { register, requestDurationMiddleware } = require('./metrics');
 
 const app = express();
 
 app.use(morgan('tiny'));
+app.use(requestDurationMiddleware);
 app.use(bodyParser.json());
+
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+});
+
 app.use('/', routes);
 
 app.use((err, req, res, _next) => {
