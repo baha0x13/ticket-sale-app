@@ -94,6 +94,27 @@ module.exports = {
         }
     },
 
+    async update(id, data){
+        const movie = await Movie.findByPk(id);
+        if(movie === null || movie.isDeleted){
+            const err = new Error('Movie not found');
+            err.code = 404;
+            throw err;
+        }
+
+        const { title, imdbID, hall, date } = data;
+        try {
+            return await movie.update({ title, imdbID, hall, date });
+        } catch (err) {
+            if (err instanceof UniqueConstraintError) {
+                const friendly = new Error(`A movie with imdbID '${imdbID}' already exists`);
+                friendly.code = 409;
+                throw friendly;
+            }
+            throw err;
+        }
+    },
+
     async delete(id){
         const movie = await Movie.findByPk(id);
         if(movie === null || movie.isDeleted){

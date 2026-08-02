@@ -51,8 +51,8 @@ function OrdersPanel() {
               <td>
                 {order.paymentStatus === 'pending' && (
                   <>
-                    <button disabled={actioningId === order.id} onClick={() => act(order.id, 'approve')}>Approve</button>{' '}
-                    <button disabled={actioningId === order.id} onClick={() => act(order.id, 'reject')}>Reject</button>
+                    <button className="btn-approve" disabled={actioningId === order.id} onClick={() => act(order.id, 'approve')}>Approve</button>{' '}
+                    <button className="btn-reject" disabled={actioningId === order.id} onClick={() => act(order.id, 'reject')}>Reject</button>
                   </>
                 )}
               </td>
@@ -122,17 +122,78 @@ function UsersPanel() {
   );
 }
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, eyebrow, variant, onClose, children }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-window" onClick={e => e.stopPropagation()}>
+      <div className={'modal-window' + (variant ? ` modal-window--${variant}` : '')} onClick={e => e.stopPropagation()}>
         <div className="modal-window__header">
-          <h3>{title}</h3>
+          <div>
+            {eyebrow && <div className="modal-window__eyebrow">{eyebrow}</div>}
+            <h3>{title}</h3>
+          </div>
           <button className="modal-window__close" onClick={onClose}>✕</button>
         </div>
         {children}
       </div>
     </div>
+  );
+}
+
+function toDatetimeLocal(isoString) {
+  const d = new Date(isoString);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function EditMovieModal({ movie, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    title: movie.title,
+    imdbID: movie.imdbID,
+    hall: movie.hall,
+    date: toDatetimeLocal(movie.date)
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  function update(field) {
+    return e => setForm(f => ({ ...f, [field]: e.target.value }));
+  }
+
+  function onSubmit(e) {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    api.patch(`/movies/${movie.id}`, { ...form, hall: Number(form.hall) })
+      .then(() => {
+        onSaved();
+        onClose();
+      })
+      .catch(err => setError(err.response?.data?.error?.message || 'Could not save changes'))
+      .finally(() => setIsSaving(false));
+  }
+
+  return (
+    <Modal title="Edit movie" onClose={onClose}>
+      <form onSubmit={onSubmit} className="admin-form">
+        {error && <div className="error-banner">{error}</div>}
+        <label>Title</label>
+        <input value={form.title} onChange={update('title')} required />
+
+        <label>IMDb ID</label>
+        <input value={form.imdbID} onChange={update('imdbID')} required />
+
+        <label>Hall</label>
+        <input type="number" value={form.hall} onChange={update('hall')} required />
+
+        <label>Date</label>
+        <input type="datetime-local" value={form.date} onChange={update('date')} required />
+
+        <div className="admin-form__actions">
+          <button type="button" className="btn-ghost" onClick={onClose} disabled={isSaving}>Cancel</button>
+          <button type="submit" disabled={isSaving}>{isSaving ? 'Saving…' : 'Save changes'}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -164,28 +225,33 @@ function DeletedMoviesModal({ onClose, onRestored }) {
   }
 
   return (
-    <Modal title="Deleted movies" onClose={onClose}>
+    <Modal title="Deleted movies" eyebrow="Archive" variant="archive" onClose={onClose}>
       {error && <div className="error-banner">{error}</div>}
       {isLoading
         ? <div className="center"><div className="spinner" /></div>
         : movies.length === 0
           ? <p className="admin-table__muted">Nothing deleted.</p>
           : (
-            <table className="admin-table">
-              <thead><tr><th>#</th><th>Title</th><th>Hall</th><th>Actions</th></tr></thead>
-              <tbody>
-                {movies.map(movie => (
-                  <tr key={movie.id}>
-                    <td>{movie.id}</td>
-                    <td>{movie.title}</td>
-                    <td>{movie.hall}</td>
-                    <td>
-                      <button disabled={restoringId === movie.id} onClick={() => onRestore(movie.id)}>Restore</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              <p className="admin-table__muted">Hidden from listings — past orders referencing these movies still resolve fine.</p>
+              <table className="admin-table admin-table--archive">
+                <thead><tr><th>#</th><th>Title</th><th>Hall</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {movies.map(movie => (
+                    <tr key={movie.id}>
+                      <td>{movie.id}</td>
+                      <td>{movie.title}</td>
+                      <td>{movie.hall}</td>
+                      <td>
+                        <button className="btn-restore" disabled={restoringId === movie.id} onClick={() => onRestore(movie.id)}>
+                          {restoringId === movie.id ? 'Restoring…' : 'Restore'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
     </Modal>
   );
@@ -200,6 +266,7 @@ function MoviesPanel() {
   const [formMessage, setFormMessage] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [editingMovie, setEditingMovie] = useState(null);
 
   useEffect(() => { fetchMovies(); }, []);
 
@@ -274,7 +341,10 @@ function MoviesPanel() {
                   <td>{movie.Year}</td>
                   <td>{movie.hall}</td>
                   <td>
-                    <button disabled={deletingId === movie.id} onClick={() => onDelete(movie.id)}>Delete</button>
+                    <button className="btn-edit" onClick={() => setEditingMovie(movie)}>Edit</button>{' '}
+                    <button className="btn-delete" disabled={deletingId === movie.id} onClick={() => onDelete(movie.id)}>
+                      {deletingId === movie.id ? 'Deleting…' : 'Delete'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -284,6 +354,10 @@ function MoviesPanel() {
 
       {showDeleted && (
         <DeletedMoviesModal onClose={() => setShowDeleted(false)} onRestored={fetchMovies} />
+      )}
+
+      {editingMovie && (
+        <EditMovieModal movie={editingMovie} onClose={() => setEditingMovie(null)} onSaved={fetchMovies} />
       )}
     </>
   );

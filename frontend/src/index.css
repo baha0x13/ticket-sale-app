@@ -1,8 +1,10 @@
 :root {
   --primary: #023037;
   --accent: #f0c835;
+  --accent-strong: #d9af1f;
   --available: #f0c835e6;
   --unavailable: #9a0000;
+  --destructive: #7a1f1f;
 }
 
 * {
@@ -200,8 +202,8 @@ a {
 .seat-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  max-width: 800px;
+  gap: 8px;
+  max-width: 420px;
   margin: 0 auto 100px;
   padding: 5px 0;
 }
@@ -211,11 +213,12 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 200;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 400;
   color: white;
   text-shadow: 1px 1px #011a1e;
-  box-shadow: 0 2px 5px 2px rgba(1, 26, 30, 0.75);
+  box-shadow: 0 2px 4px 1px rgba(1, 26, 30, 0.6);
 }
 
 .seat.available {
@@ -343,6 +346,27 @@ a {
   cursor: not-allowed;
 }
 
+.admin-form__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-form__actions button {
+  margin-top: 0;
+  flex: 1;
+}
+
+.admin-form__actions .btn-ghost {
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
+}
+
+.admin-form__actions .btn-ghost:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
 .ok-banner {
   background: #d4edda;
   color: #155724;
@@ -406,19 +430,76 @@ a {
 }
 
 .admin-table button {
-  padding: 4px 10px;
-  border: none;
-  border-radius: 4px;
+  padding: 5px 12px;
+  border-radius: 5px;
   cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.admin-table button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.admin-table button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-edit {
+  background: none;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.btn-edit:hover:not(:disabled) {
+  background: var(--primary);
   color: white;
 }
 
-.admin-table button:first-of-type {
-  background: #28a745;
+.btn-delete,
+.btn-reject {
+  background: none;
+  border: 1px solid var(--destructive);
+  color: var(--destructive);
 }
 
-.admin-table button:last-of-type {
-  background: #dc3545;
+.btn-delete:hover:not(:disabled),
+.btn-reject:hover:not(:disabled) {
+  background: var(--destructive);
+  color: white;
+}
+
+.btn-restore {
+  border: none;
+  background: var(--accent);
+  color: var(--primary);
+}
+
+.btn-restore:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.btn-approve {
+  border: none;
+  background: #2f8f5f;
+  color: white;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #256f49;
+}
+
+.btn-ghost {
+  background: none;
+  border: 1px solid #ccc;
+  color: #555;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: #f0f0f0;
 }
 
 .admin-form {
@@ -472,10 +553,42 @@ a {
   margin: 0;
 }
 
+.modal-window__eyebrow {
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin-bottom: 2px;
+}
+
 .modal-window__close {
   border: none;
   background: none;
   font-size: 1.1rem;
   cursor: pointer;
   color: #666;
+}
+
+/* Deleted-movies archive modal */
+
+.modal-window--archive {
+  background: #f4f2ec;
+  border-top: 4px solid var(--primary);
+}
+
+.modal-window--archive .modal-window__close {
+  color: var(--primary);
+}
+
+.admin-table--archive {
+  background: #faf9f5;
+}
+
+.admin-table--archive tr:not(:hover) td:not(:last-child) {
+  color: #6b6b64;
+}
+
+.admin-table--archive th {
+  background: #ece8dc;
 }

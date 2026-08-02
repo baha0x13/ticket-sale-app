@@ -18,6 +18,10 @@ module.exports = {
         return movieService.getTrailer(title, year)
     },
 
+    update(id, data){
+        return movieService.updateMovie(id, data);
+    },
+
     delete(id){
         return movieService.deleteMovie(id);
     },

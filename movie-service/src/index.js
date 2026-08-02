@@ -67,6 +67,9 @@ async function processMessage(channel, msg) {
             case 'movie.getTrailer':
                 actionResult = await movieController.getTrailer(data.body);
                 break;
+            case 'movie.update':
+                actionResult = await movieController.update(parseInt(data.body.id), data.body);
+                break;
             case 'movie.delete':
                 await movieController.delete(parseInt(data.body));
                 actionResult = { deleted: true };

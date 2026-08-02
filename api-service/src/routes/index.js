@@ -32,6 +32,12 @@ router.post('/movies', requireAuth, requireRole('admin', 'editor'), (req, res, n
     }).catch(next);
 });
 
+router.patch('/movies/:id', requireAuth, requireRole('admin', 'editor'), (req, res, next) => {
+    movieController.update(req.params.id, req.body).then(result => {
+        res.status(200).json(result);
+    }).catch(next);
+});
+
 router.delete('/movies/:id', requireAuth, requireRole('admin', 'editor'), (req, res, next) => {
     movieController.delete(req.params.id).then(() => {
         res.sendStatus(204);

@@ -88,6 +88,10 @@ module.exports = {
         return sendMessage({action: 'movie.getTrailer', body: {title: title, year: year}})
     },
 
+    updateMovie(id, data){
+        return sendMessage({action: 'movie.update', body: {...data, id}})
+    },
+
     deleteMovie(id){
         return sendMessage({action: 'movie.delete', body: id})
     },

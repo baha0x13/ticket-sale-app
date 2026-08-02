@@ -8,10 +8,14 @@ module.exports = {
     dialect: 'postgres',
     port: process.env.DB_PORT || '5432',
     logging: false,
-    dialectOptions: useSsl ? {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false
-        }
-    } : {}
+    dialectOptions: {
+        ...(useSsl ? {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false
+            }
+        } : {}),
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10000
+    }
 };
