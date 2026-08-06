@@ -13,7 +13,8 @@ RUN npm ci --omit=dev && \
 
 COPY --chown=appuser:appgroup src ./src
 
-USER appuser
+#running as non-root user
+USER appuser 
 
 EXPOSE 3030
 
